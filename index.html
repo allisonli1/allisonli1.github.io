@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-annotation/2.5.1/d3-annotation.min.js"></script>
+
+<head>
+    <style>
+        h1 {
+            text-align: center;
+        }
+        button {
+            background-color: green;/* Green */
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin-top: 10px;
+            margin-right: 5px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            outline: inherit;
+            border-radius: 15px;
+            box-shadow: 5px 5px 5px #000;
+        }
+    
+        .tooltip {
+            position: absolute;
+        }
+        .annotation-group1, .annotation-group2, .annotation-group3 {
+            font-size: 12px;
+        }
+        .main-divide {
+            display: inline-block;
+        }
+        .left-menu {
+            width: 300px;
+        }
+        #info {
+            vertical-align: top;
+        }
+        #instructions {
+            font-size: 20px;
+            font-weight: bolder;
+        }
+        #nav {
+            justify-content: center;
+        }
+        #hover-instructions {
+            text-align: center;
+            font-weight: bolder;
+            width: 300px;
+        }
+        #slideDescriptionText {
+            padding-left: 100px;
+            text-align: center;
+            width: 1000px;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>New York State Electric Vehicle Registrations by Year</h1>
+    <div class="main-divide" id="info">
+            <div class="left-menu"><p id="instructions">Use the Butttons below to Navigate</p></div>
+            <div class="left-menu" id="nav">
+                <button id="prev" onclick="prevSlide()">Prev</button>
+                <button id="next" onclick="nextSlide()">Next</button>
+            </div>
+            <div id="hover-instructions"><p>Mouse over the points in each line graph to learn more about EV trends.</p></div>
+
+            <div class="legend">
+                <div><h4>Legend</h4></div>
+                <div class="left-menu" > <svg id="legend" height=70 width=300></svg> </div>
+            </div>
+    </div>
+    <div class="main-divide">
+        <div><p id="slideDescriptionText"></p></div>
+        <div id="my_dataviz"></div>
+    </div>
+
+</body>
+
+
+<script>
+    var currentSlide = 0;
+
+    var margin = {top: 10, right: 50, bottom: 50, left: 100},
+    width = 1100 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+    var segments = {
+        1: {'start': 2010, 'end': 2015},
+        2: {'start': 2015, 'end': 2020},
+        3: {'start': 2020, 'end': 2023},
+    }
+
+    const slideDescription = [
+        "The number of Electric Vehicles (EVs) registered from 2010-2015 shows relatively slow growth, with Plug-in EVs and Battery EVs having very similar registration numbers. There are fewer than 2000 EVs registered in 2011.",
+        "Battery Electric Vehicles (BEV) exhibit a high growth rate as registrations of Plug-in Hybrid Electric Vehicles (PHEV) seem to slow. The number of Battery EVs registered surpasses the number of Plug-in Hybrid EVs in 2020.",
+        "EVs, and BEVs in particular, have greatly increased in popularity, as evident by the almost 500% increase in number of registrations from 2011 to 2023. There were 48 different makes and 96 different models of BEVs registered in 2023, compared to just 11 makes and models in 2011."
+    ]
+    const type = d3.annotationCalloutElbow
+
+    const annotations = [
+        {
+            note: {
+            label:
+               "In 2011, Nissan becomes one of the first major automakers to build a battery-powered EV, releasing the Nissan Leaf",
+            title: "The Advent of main-stream EVs",
+            wrap: 150,
+            align: "left"
+            },
+            //can use x, y directly instead of data
+            data: { year: d3.timeParse("%Y")(2011), count: 1887 },
+            dy: -300,
+            dx: 20,
+            type: d3.annotationCallout,
+            connector: { end: "dot" },
+        },
+        {
+            note: {
+            label:
+               "The cost of EV batteries drops by 50 percent from 2009 to 2013, making EVs more affordable",
+            title: "Lowering Battery Costs",
+            wrap: 150,
+            align: "left"
+            },
+            //can use x, y directly instead of data
+            data: { year: d3.timeParse("%Y")(2013), count: 2664 },
+            dy: -150,
+            dx: 20,
+            type: d3.annotationCallout,
+            connector: { end: "dot" },
+        },
+        {
+            note: {
+            label:
+               "In 2017, Tesla updated its Model S, first released in 2012. The new Model S can drive up to 300 miles on one charge",
+            title: "Improving Mileage",
+            wrap: 150,
+            align: "right"
+            },
+            //can use x, y directly instead of data
+            data: { year: d3.timeParse("%Y")(2017), count: 107537 },
+            dy: -250,
+            dx: -20,
+            type: d3.annotationCallout,
+            connector: { end: "dot" },
+        },
+        {
+            note: {
+            label:
+               "In 2020, the Tesla Model 3 surpasses the Nissan Leaf to become the world's best selling electric car ever",
+            title: "Tesla Dominates the Market",
+            wrap: 150,
+            align: "right"
+            },
+            //can use x, y directly instead of data
+            data: { year: d3.timeParse("%Y")(2020), count: 408560 },
+            dy: -150,
+            dx: -20,
+            type: d3.annotationCallout,
+            connector: { end: "dot" },
+        },
+        {
+            note: {
+            label:
+               "Battery EVs significantly widen the gap, with 1.5x more registrations compared to Plug-in Hybrid EVs",
+            title: "Battery EVs Take Over",
+            wrap: 150,
+            align: "right"
+            },
+            //can use x, y directly instead of data
+            data: { year: d3.timeParse("%Y")(2022), count: 902478 },
+            dy: 300,
+            dx: -20,
+            type: d3.annotationCallout,
+            connector: { end: "dot" },
+        },
+    ]
+    var svg = d3.select("#my_dataviz")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform",
+                "translate(" + margin.left + "," + margin.top + ")");
+        
+
+    var line_legend = d3.select("#legend")
+    // Handmade legend
+    var keys = ["Battery Electric Vehicle (BEV)", "Plug-in Hybrid Electric Vehicle (PHEV)"]
+
+
+    // Usually you have a color scale in your chart already
+    var color = d3.scaleOrdinal()
+    .domain(keys)
+    .range(['#e41a1c','#377eb8']);
+    
+    line_legend.selectAll("mydots")
+    .data(keys)
+    .enter()
+    .append("rect")
+        .attr("x", 0)
+        .attr("y", function(d,i){ return 10 + i*(25+5)}) // 100 is where the first dot appears. 25 is the distance between dots
+        .attr("width", 30)
+        .attr("height", 2)
+        .style("fill", function(d){ return color(d)})
+
+    // Add one dot in the legend for each name.
+    line_legend.selectAll("mylabels")
+    .data(keys)
+    .enter()
+    .append("text")
+        .attr("x", 0 + 25*1.5)
+        .attr("y", function(d,i){ return 10 + i*(25+5) + 3}) // 100 is where the first dot appears. 25 is the distance between dots
+        .style("fill", function(d){ return color(d)})
+        .text(function(d){ return d})
+        .attr("text-anchor", "left")
+        .style("alignment-baseline", "middle")
+
+    function prevSlide() {
+        console.log('Slide Current', currentSlide);
+        if (currentSlide == 1) {
+            document.getElementById("prev").style.background='lightslategray';
+            document.getElementById("slideDescriptionText").innerHTML = slideDescription[currentSlide-1];
+            return;
+        }
+        else {
+            removeSegment(currentSlide)
+            document.getElementById("prev").style.background='green';
+            currentSlide -= 1;
+            document.getElementById("slideDescriptionText").innerHTML = slideDescription[currentSlide-1];
+
+        }
+        if (currentSlide == 1) {
+            document.getElementById("prev").style.background='lightslategray';
+        }
+        document.getElementById("next").style.background='green';
+    }
+
+    function nextSlide() {
+        console.log('Slide Current', currentSlide);
+        if (currentSlide == 3) {
+            document.getElementById("next").style.background='lightslategray';
+            return;
+        }
+        else {
+            currentSlide += 1;
+            var start_year = segments[currentSlide]['start'];
+            var end_year = segments[currentSlide]['end'];
+            update(start_year, end_year, currentSlide, 'both');
+            
+        }
+        if (currentSlide == 1) {
+            document.getElementById("prev").style.background='lightslategray';
+        }
+        else {
+            document.getElementById("prev").style.background='green';
+        }
+        if (currentSlide == 3) {
+            document.getElementById("next").style.background='lightslategray';
+        }
+        console.log('Slide ??', currentSlide);
+    }
+
+    function removeSegment(currentSlide) {
+        for (i = 0; i < 2; i++) {
+            console.log(i);
+            svg.selectAll('.line_' + (i+1) + currentSlide).remove();
+            svg.selectAll(".dot" + (i+1) + currentSlide).remove();
+        }
+        svg.selectAll(".annotation-group" + currentSlide).remove();
+    }
+
+    function update(start_year, end_year, currentSlide, dataset_type) {
+        document.getElementById("slideDescriptionText").innerHTML = slideDescription[currentSlide-1];
+        console.log(dataset_type);
+        var tooltip = d3.select("#my_dataviz")
+            .append("div")
+            .style("opacity", 0)
+            .attr("class", "tooltip")
+            .style("background-color", "white")
+            .style("border", "solid")
+            .style("border-width", "1px")
+            .style("border-radius", "5px")
+            .style("padding", "10px")
+
+        console.log(start_year, end_year);
+
+        d3.csv("ny_all_ev.csv", 
+        function(d){
+            return { year: d3.timeParse("%Y")(d.year), count : parseInt(d.count), ev_type: d.ev_type, 
+                     make_count: parseInt(d.make_count), model_count: parseInt(d.model_count)}
+        },
+        function(data) {
+            console.log('Length of A', annotations.slice(0, 2*(currentSlide+1)).length);
+            console.log(currentSlide);
+            const makeAnnotations = d3
+                .annotation()
+                .editMode(false)
+                .notePadding(15)
+                .accessors({
+                    x: (d) => x(d.year),
+                    y: (d) => y(d.count),
+                })
+                .accessorsInverse({
+                    date: (d) => x.invert(d.x),
+                    close: (d) => y.invert(d.y),
+                })
+                .annotations(annotations.slice(currentSlide-1, 2*(currentSlide)));
+
+            // Add X axis
+            var x = d3.scaleTime()
+                .domain(d3.extent(data, function(d) { return d.year; }))
+                .range([ 0, width ]);
+            var xAxis = d3.axisBottom(x);
+            var xAxisG = svg.append("g")
+                            .attr("transform", "translate(0," + height + ")")
+                            .call(xAxis).style("font-size","16px");
+
+            // Add Y axis
+            var y = d3.scaleLinear()
+                .domain([0, d3.max(data, function(d) { return +d.count; })])
+                .range([ height, 0 ]);
+            svg.append("g")
+                .call(d3.axisLeft(y)).style("font-size","15px");
+
+            data = data.filter(function(row) {
+                return row['year'] >= d3.timeParse("%Y")(start_year) & row['year'] <= d3.timeParse("%Y")(end_year);
+            })
+
+            // Y-Axis Label
+            svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0 - margin.left)
+            .attr("x", 0 - height / 2)
+            .attr("dy", "1em")
+            .style("text-anchor", "middle")
+            .text("Registered Vehicle Count")
+            .attr("class", "yAxisLabel");
+            
+            //Y-Axis Label
+            svg.append("text")
+            .attr("transform","translate(" + width / 2 + " ," + (height - 5 + margin.bottom) + ")")
+            .style("text-anchor", "middle")
+            .text("Year")
+            .attr("class", "xAxisLabel");
+
+            const ev1 = data.filter((d) => d.ev_type == "Battery Electric Vehicle (BEV)");
+            const ev2 = data.filter((d) => d.ev_type == "Plug-in Hybrid Electric Vehicle (PHEV)");
+            console.log(ev1.map(function(item){return item.year}));
+            const dataset = [ev1, ev2];
+            const colors = ['#e41a1c','#377eb8'];
+
+            var mouseover = function(d) {
+                tooltip
+                .style("opacity", 1)
+            }
+
+            var mousemove = function(d) {
+                tooltip
+                .html("<b>" + d.ev_type + "</b><br> Total Registered: " + d.count + "<br> Number of Unique Makes: " + d.make_count + "<br> Number of Unique Models: " + d.model_count)
+                .style("left", (d3.mouse(this)[0]+200) + "px")
+                .style("top", (d3.mouse(this)[1]+50) + "px")
+            }
+
+            // A function that change this tooltip when the leaves a point: just need to set opacity to 0 again
+            var mouseleave = function(d) {
+                tooltip
+                .transition()
+                .delay(1000)
+                .duration(500)
+                .style("opacity", 0)
+            }
+
+            for (i = 0; i < dataset.length; i++) {
+
+                console.log(i);
+                const currentDataset = dataset[i];
+
+                const transitionPath = d3.transition().ease(d3.easeSin).duration(2000);
+
+                // svg.selectAll('.line_' + (i+1)).remove();
+                const path = svg.append("path")
+                    .datum(currentDataset)
+                    .attr("class", "line_" + (i + 1) + currentSlide)
+                    .attr("d",
+                    d3.line()
+                        .x(function (d) { return x(d.year); })
+                        .y(function (d) { return y(d.count); })
+                        .curve(d3.curveMonotoneX)
+                    )
+                    .attr("fill", "none")
+                    .attr("stroke", colors[i])
+                    .attr("stroke-width", 2.5)
+
+                // path.transition(transitionPath)
+                path.attr("stroke-dashoffset", path.node().getTotalLength())
+                    .attr("stroke-dasharray", path.node().getTotalLength())
+                    .transition(transitionPath)
+                    .attr("stroke-dashoffset", 0);
+
+                console.log(currentDataset[0])
+                // svg.selectAll(".dot" + (i+1)).remove();
+                svg.selectAll(".dot" + (i+1) + currentSlide)
+                        .data(currentDataset)
+                        .enter()
+                        .append("circle") // Uses the enter().append() method
+                        .attr("class", "dot" + (i+1) + currentSlide) // Assign a class for styling
+                        .attr("cy", function (d) { return y(d.count); })
+                        .attr("cx", function (d, i) { return x(d.year); })
+                        .attr("r", 6)
+                        .attr("fill", colors[i])
+                        .on("mouseover", mouseover )
+                        .on("mousemove", mousemove )
+                        .on("mouseleave", mouseleave );
+
+            }
+            svg.append("g")
+                .attr("class", "annotation-group"+currentSlide)
+                .call(makeAnnotations);
+            
+
+        })
+    };
+
+    d3.select("#selectButton").on("change", function(d) {
+        // recover the option that has been chosen
+        var selectedOption = d3.select(this).property("value")
+        
+        // run the updateChart function with this selected option
+        var start_year = segments[currentSlide]['start'];
+        var end_year = segments[currentSlide]['end'];
+        update(start_year, end_year, currentSlide, selectedOption);
+    })
+
+    nextSlide(currentSlide);
+    console.log('First Slide', currentSlide)
+    // loadSlide(segments['first']);
+</script>
